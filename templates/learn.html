@@ -44,9 +44,12 @@
             <div class="row">
                 <div class="col-md-6">
                     <div class="dance-card">
-                        <h1>TikTok</h1>
-                        <img class="card-img" src="../static/assets/tiktok.jpg">
+                        <h1>K-Pop</h1>
+                        <img class="card-img" src="../static/assets/kpop.jpg">
                         <br>
+                        <br>
+                        <br>
+                        <a href="/learn/kpop"><button class="btn btn-login">Start/Continue Track</button></a>
                     </div>
                 </div>
                 <br>
@@ -55,6 +58,9 @@
                         <h1>Hip Hop</h1>
                         <img class="card-img" src="../static/assets/hiphop.jpg">
                         <br>
+                        <br>
+                        <br>
+                        <a href="/learn/hiphop"><button class="btn btn-login">Start/Continue Track</button></a>
                     </div>
                 </div>
                 <br>
@@ -63,49 +69,30 @@
                 <div class="col-md-6">
                     <div class="dance-card">
                         <h1>Ballet</h1>
+                        <img class="card-img" src="../static/assets/ballet.jpg">
+                        <br>
+                        <br>
+                        <br>
+                        <a href="learn/ballet"><button class="btn btn-login">Start/Continue Track</button></a>
                     </div>
-                    <br>
                 </div>
                 <br>
-                <div class="col-md-6">
+                <!-- <div class="col-md-6">
                     <div class="dance-card">
                         <h1>K-Pop</h1>
+                        <img class="card-img" src="../static/assets/kpop.jpg">
+                        <br>
+                        <br>
+                        <br>
+                        <a href="learn/kpop"><button class="btn btn-login">Start/Continue Track</button></a>
                     </div>
-                    <br>
                 </div>
-                <br>
+                <br> -->
             </div>
         </div>
     </div>
-    {% include 'templates/login.html' %}
     <script>
         let request = null;
-        function openLogin() {
-            $('#modalLogin').modal('show')
-        }
-        function login() {
-            // Get data from form
-            var username = $('#username').val();
-            var password = $('#password').val();
-            if (username == '' || password == '') {
-                alert("Please enter a username and password!");
-                return;
-            }
-            var json_event = {
-                "username": username,
-                "password": password,
-            };
-            if (request != null)
-                request.abort();
-            request = $.post("/login", {
-                dataType: 'json',
-                contentType: 'application/json',
-                event_data: JSON.stringify(json_event)
-            }).done(function (data) {
-            }).fail(function (jqXHR, textStatus, errorThrown) {
-                alert("Login/Sign Up failed");
-            });
-        }
     </script>
 </body>
 

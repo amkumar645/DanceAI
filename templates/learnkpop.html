@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>DanceAI</title>
+    <link href='https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css' rel='stylesheet'>
+    <link href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css' rel='stylesheet'>
+    <!------------------------JS/CSS/JQuery/Bootstrap src ------------>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+        crossorigin="anonymous"></script>
+    <!-- CSS stylesheet  -->
+    <link rel="stylesheet" type="text/css" href="../static/app.css">
+    <link rel="icon" type="image/png" href="{{ url_for('static',filename='favicon.png') }}">
+</head>
+
+<body style="background-color: white">
+    <div class="purple-background">
+        <nav class="navbar navbar-expand-lg navbar-custom">
+            <div class="navbar-brand">DanceAI</div>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+                aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-end" id="navbarSupportedContent">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="/learn">Learn</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="/explore">Explore</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="/connect">Connect</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+        <div class="top-container-2 center-container">
+            <h1 class="page-title">K-Pop Lessons</h1>
+            <br>
+            <div class="row lesson-card">
+                <div class="full-width center-container">
+                    <h2>Beginner Dance</h2>
+                    <p>Shut Down by Blackpink (video by Ellen and Brian)</p>
+                    <iframe width="560" height="315" src="https://www.youtube.com/embed/-Y_n2RxTXyc" title="YouTube video player"
+                        frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowfullscreen></iframe>
+                    <br>
+                    <br>
+                    <form action="/learn/kpop/beginner" method="post" enctype="multipart/form-data">
+                        <input type="file" name="file" value=""/>
+                        <input type="submit" value="Upload file">
+                    </form>
+                    <br>
+                    <p>
+                        Current score: {{kpop_beginner}}
+                    </p>
+                    <p>
+                        {% if kpop_beginner >= 0.5 %}
+                        <i class="bi bi-check"></i>You've passed! Try again or move to the next lesson.
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            <br>
+            <div class="row lesson-card">
+                <div class="full-width center-container">
+                    <h2>Intermediate Dance</h2>
+                    <p>Lalisa by Blackpink (video by Ellen and Brian)</p>
+                    <iframe width="560" height="315" src="https://www.youtube.com/embed/2bjU__ysmus" title="YouTube video player"
+                        frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowfullscreen></iframe>
+                    <br>
+                    <br>
+                    <form action="/learn/kpop/intermediate" method="post" enctype="multipart/form-data">
+                        <input type="file" name="file" value="" />
+                        <input type="submit" value="Upload file">
+                    </form>
+                    <br>
+                    <p>Current score: {{kpop_intermediate}}</p>
+                    <p>
+                        {% if kpop_intermediate >= 0.5 %}
+                        <i class="bi bi-check"></i>You've passed! Try again or move to the next lesson.
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            <br>
+            <div class="row lesson-card">
+                <div class="full-width center-container">
+                    <h2>Advanced Dance</h2>
+                    <p>Run BTS by BTS (video by injeolknee)</p>
+                    <iframe width="560" height="315" src="https://www.youtube.com/embed/MIURCF6odaU" title="YouTube video player"
+                        frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowfullscreen></iframe>
+                    <br>
+                    <br>
+                    <form action="/learn/kpop/advanced" method="post" enctype="multipart/form-data">
+                        <input type="file" name="file" value="" />
+                        <input type="submit" value="Upload file">
+                    </form>
+                    <br>
+                    <p>Current score: {{kpop_advanced}}</p>
+                    <p class="bold-text">
+                        {% if kpop_advanced >= 0.5 %}
+                        <i class="bi bi-check"></i>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            <br>
+            <br>
+        </div>
+    </div>
+    <script>
+        let request = null;
+    </script>
+</body>
+
+</html>

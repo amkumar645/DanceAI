@@ -104,12 +104,18 @@ nav {
     height: 500px;
     margin-bottom: 30px;
 }
-.dance-card:hover {
-    cursor: pointer;
-    transform: scale(1.03);
-    transition: all 0.3s;
-}
 .card-img {
     height: 300px;
     width: 300px;
+}
+.lesson-card {
+    background-color: white;
+    border-radius: 20px;
+    padding-top: 10px;
+    transition: all 0.3s;
+    height: 580px;
+    margin-bottom: 30px;
+}
+.full-width {
+    width:100%;
 }

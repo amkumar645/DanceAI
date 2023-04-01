@@ -1,217 +1,64 @@
 from flask import Flask, render_template, request, redirect, session
-from fileinput import filename
 import cv2
 import tempfile
 from pathlib import Path
 import mediapipe as mp
-import time
-import os
 import numpy as np
 import math
 import db
 import json
+from vidgear.gears import CamGear
 
 app = Flask(__name__, template_folder='.')
 app.secret_key = "cat"
 mp_pose = mp.solutions.pose
 pose = mp_pose.Pose()
 
-def calculate_angle(l1, l2):
-    return np.arccos((l1[0]*l2[0] + l1[1]*l2[1])/(math.sqrt(l1[0]**2+l1[1]**2)*math.sqrt(l2[0]**2+l2[1]**2)))
-
-def calculate_angles(positions):
-    angles = []
+def calculate_normalized(positions):
     for frame in range(len(positions)):
-        frame_positions = positions[frame]
-        # Left arm vector
-        left_arm_vector_1 = [frame_positions[0] - frame_positions[2], frame_positions[1] - frame_positions[3]]
-        left_arm_vector_2 = [frame_positions[4] - frame_positions[2], frame_positions[5] - frame_positions[3]]
-        left_arm_angle = calculate_angle(left_arm_vector_1, left_arm_vector_2)
-        # Left hand vector
-        left_hand_vector_1 = [frame_positions[2] - frame_positions[4], frame_positions[3] - frame_positions[5]]
-        left_hand_vector_2 = [frame_positions[6] - frame_positions[4], frame_positions[7] - frame_positions[5]]
-        left_hand_angle = calculate_angle(left_hand_vector_1, left_hand_vector_2)
-        # Left leg vector
-        left_leg_vector_1 = [frame_positions[8] - frame_positions[10], frame_positions[9] - frame_positions[11]]
-        left_leg_vector_2 = [frame_positions[12] - frame_positions[10], frame_positions[13] - frame_positions[11]]
-        left_leg_angle = calculate_angle(left_leg_vector_1, left_leg_vector_2)
-        # Left foot vector
-        left_foot_vector_1 = [frame_positions[10] - frame_positions[12], frame_positions[11] - frame_positions[13]]
-        left_foot_vector_2 = [frame_positions[14] - frame_positions[12], frame_positions[15] - frame_positions[13]]
-        left_foot_angle = calculate_angle(left_foot_vector_1, left_foot_vector_2)
-        
-        # Right arm vector
-        right_arm_vector_1 = [frame_positions[16] - frame_positions[18], frame_positions[17] - frame_positions[19]]
-        right_arm_vector_2 = [frame_positions[20] - frame_positions[18], frame_positions[21] - frame_positions[19]]
-        right_arm_angle = calculate_angle(right_arm_vector_1, right_arm_vector_2)
-        # Right hand vector
-        right_hand_vector_1 = [frame_positions[18] - frame_positions[20], frame_positions[19] - frame_positions[21]]
-        right_hand_vector_2 = [frame_positions[22] - frame_positions[20], frame_positions[23] - frame_positions[21]]
-        right_hand_angle = calculate_angle(right_hand_vector_1, right_hand_vector_2)
-        # Right leg vector
-        right_leg_vector_1 = [frame_positions[24] - frame_positions[26], frame_positions[25] - frame_positions[27]]
-        right_leg_vector_2 = [frame_positions[28] - frame_positions[26], frame_positions[29] - frame_positions[27]]
-        right_leg_angle = calculate_angle(right_leg_vector_1, right_leg_vector_2)
-        # Right foot vector
-        right_foot_vector_1 = [frame_positions[26] - frame_positions[28], frame_positions[27] - frame_positions[29]]
-        right_foot_vector_2 = [frame_positions[30] - frame_positions[28], frame_positions[31] - frame_positions[29]]
-        right_foot_angle = calculate_angle(right_foot_vector_1, right_foot_vector_2)
+        chest_x = positions[frame][-2]
+        chest_y = positions[frame][-1]
+        for position in range(len(positions[frame])):
+            if position % 2 == 0:
+                positions[frame][position] -= chest_x
+            else:
+                positions[frame][position] -= chest_y
+        return positions
 
-        angles.append([left_arm_angle, left_hand_angle, left_leg_angle, left_foot_angle, right_arm_angle, right_hand_angle, right_leg_angle, right_foot_angle])
-    return angles
-
-def calculate_score(a1, a2, offset):
+def calculate_normalized_score(n1, n2, offset):
     score = 0
     worst_frame_score = 0
     worst_frame = -1
-    for frame in range(len(a1)):
-        a1_angles = np.array(a1[frame])
-        a2_angles = np.array(a2[frame])
-        angle_diff = a1_angles - a2_angles
-        frame_score = np.linalg.norm(angle_diff)
-        if frame_score > worst_frame_score:
-            worst_frame_score = frame_score
+    total_count = 0
+    for frame in range(len(n1)):
+        n1_score = np.array(n1[frame])
+        n2_score = np.array(n2[frame])
+        n_diff = n1_score - n2_score
+        frame_score = np.linalg.norm(n_diff)
+        if frame_score * 0.01 > worst_frame_score:
+            worst_frame_score = frame_score * 0.001
             worst_frame = frame
-        score += frame_score
-    score /= len(a1) * -1
+        if not np.isnan(frame_score):
+            score += frame_score * 0.001
+            total_count += 1
+    score /= total_count * -1
     current_frame = (worst_frame + offset) / 30
     frame_1 = math.floor(current_frame)
     frame_2 = math.ceil(current_frame)
-    print("Check your poses between seconds", frame_1, "and", frame_2)
+    # print("Check your poses between seconds", frame_1, "and", frame_2)
     return np.exp(score)
 
-# Page routes begin here
-# Home page
-@app.route('/')
-def home():
-    return render_template("templates/home.html")  
-# Login route
-@app.route('/login', methods=['POST'])
-def login():
-    if request.method == 'POST':
-        data = json.loads(request.form.to_dict()['event_data'])
-        user = db.user_collection.find_one({'username': data['username']})
-        if user is None:
-            db.user_collection.insert_one({
-                "username": data['username'],
-                "password": data['password'],
-            })
-        session['username'] = data['username']
-    return "/learn"
-# Learn page
-@app.route('/learn')
-def learn_home():
-    username = session['username']
-    return render_template("templates/learn.html", username=username)  
-
-@app.route('/learn/beginner/assignment/1')  
-def learn_beginner_assignment_1():  
-    return render_template("templates/index.html")  
-  
-@app.route('/learn/beginner/assignment/1/uploadedvideo', methods = ['POST'])  
-def learn_beginner_assignment_1_upload():  
-    if request.method == 'POST':  
-        # Read in video file and store temporarily
-        uploaded_file = request.files['file']
-        with tempfile.TemporaryDirectory() as td:
-            temp_filename = Path(td) / 'uploaded_video'
-            uploaded_file.save(temp_filename)
-            cap = cv2.VideoCapture(str(temp_filename))
-            fps = int(cap.get(cv2.CAP_PROP_FPS))
-            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-            frame_size = (width, height)
-            frames_uploaded = []
-            # Capture frames.
-            while cap.isOpened():
-                success, image = cap.read()
-                if not success:
-                    break
-                # Get fps.
-                fps = cap.get(cv2.CAP_PROP_FPS)
-                # Get height and width of the frame.
-                h, w = image.shape[:2]
-                # Convert the BGR image to RGB.
-                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-                # Process the image.
-                keypoints = pose.process(image)
-                # Convert the image back to BGR.
-                image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-                # Use lm and lmPose as representative of the following methods.
-                lm = keypoints.pose_landmarks
-                lmPose = mp_pose.PoseLandmark
-                if lm is None:
-                    continue
-                # Acquire the landmark coordinates.
-                # Once aligned properly, left or right should not be a concern.      
-                # Left shoulder.
-                l_shldr_x = int(lm.landmark[lmPose.LEFT_SHOULDER].x * w)
-                l_shldr_y = int(lm.landmark[lmPose.LEFT_SHOULDER].y * h)
-                # Left elbow.
-                l_elbow_x = int(lm.landmark[lmPose.LEFT_ELBOW].x * w)
-                l_elbow_y = int(lm.landmark[lmPose.LEFT_ELBOW].y * h)
-                # Left wrist.
-                l_wrist_x = int(lm.landmark[lmPose.LEFT_WRIST].x * w)
-                l_wrist_y = int(lm.landmark[lmPose.LEFT_WRIST].y * h)
-                # Left index finger
-                l_index_x = int(lm.landmark[lmPose.LEFT_INDEX].x * w)
-                l_index_y = int(lm.landmark[lmPose.LEFT_INDEX].y * h)
-                # Left hip
-                l_hip_x = int(lm.landmark[lmPose.LEFT_HIP].x * w)
-                l_hip_y = int(lm.landmark[lmPose.LEFT_HIP].y * h)
-                # Left knee
-                l_knee_x = int(lm.landmark[lmPose.LEFT_KNEE].x * w)
-                l_knee_y = int(lm.landmark[lmPose.LEFT_KNEE].y * h)
-                # Left ankle
-                l_ankle_x = int(lm.landmark[lmPose.LEFT_ANKLE].x * w)
-                l_ankle_y = int(lm.landmark[lmPose.LEFT_ANKLE].y * h)
-                # Left foot index
-                l_foot_x = int(lm.landmark[lmPose.LEFT_FOOT_INDEX].x * w)
-                l_foot_y = int(lm.landmark[lmPose.LEFT_FOOT_INDEX].y * h)
-                # Right side body parts
-                # Right shoulder.
-                r_shldr_x = int(lm.landmark[lmPose.RIGHT_SHOULDER].x * w)
-                r_shldr_y = int(lm.landmark[lmPose.RIGHT_SHOULDER].y * h)
-                # Right elbow.
-                r_elbow_x = int(lm.landmark[lmPose.RIGHT_ELBOW].x * w)
-                r_elbow_y = int(lm.landmark[lmPose.RIGHT_ELBOW].y * h)
-                # Right wrist.
-                r_wrist_x = int(lm.landmark[lmPose.RIGHT_WRIST].x * w)
-                r_wrist_y = int(lm.landmark[lmPose.RIGHT_WRIST].y * h)
-                # Right index finger
-                r_index_x = int(lm.landmark[lmPose.RIGHT_INDEX].x * w)
-                r_index_y = int(lm.landmark[lmPose.RIGHT_INDEX].y * h)
-                # Right hip
-                r_hip_x = int(lm.landmark[lmPose.RIGHT_HIP].x * w)
-                r_hip_y = int(lm.landmark[lmPose.RIGHT_HIP].y * h)
-                # Right knee
-                r_knee_x = int(lm.landmark[lmPose.RIGHT_KNEE].x * w)
-                r_knee_y = int(lm.landmark[lmPose.RIGHT_KNEE].y * h)
-                # Right ankle
-                r_ankle_x = int(lm.landmark[lmPose.RIGHT_ANKLE].x * w)
-                r_ankle_y = int(lm.landmark[lmPose.RIGHT_ANKLE].y * h)
-                # Right foot index
-                r_foot_x = int(lm.landmark[lmPose.RIGHT_FOOT_INDEX].x * w)
-                r_foot_y = int(lm.landmark[lmPose.RIGHT_FOOT_INDEX].y * h)
-                frames_uploaded.append([l_shldr_x, l_shldr_y, l_elbow_x, l_elbow_y, l_wrist_x, l_wrist_y, l_index_x, l_index_y, l_hip_x, l_hip_y, l_knee_x, l_knee_y, l_ankle_x, l_ankle_y, l_foot_x, l_foot_y,
-                              r_shldr_x, r_shldr_y, r_elbow_x, r_elbow_y, r_wrist_x, r_wrist_y, r_index_x, r_index_y, r_hip_x, r_hip_y, r_knee_x, r_knee_y, r_ankle_x, r_ankle_y, r_foot_x, r_foot_y])
-            cap.release()
-        # Read in video file and store temporarily
-        baseline_file = "IMG_1940.MOV"
-        cap = cv2.VideoCapture(str(baseline_file))
-        fps = int(cap.get(cv2.CAP_PROP_FPS))
-        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        frame_size = (width, height)
-        frames_baseline = []
+def get_score(uploaded_file, youtube_url):
+    with tempfile.TemporaryDirectory() as td:
+        temp_filename = Path(td) / 'uploaded_video'
+        uploaded_file.save(temp_filename)
+        cap = cv2.VideoCapture(str(temp_filename))
+        frames_uploaded = []
         # Capture frames.
         while cap.isOpened():
             success, image = cap.read()
             if not success:
-                print("Null.Frames")
                 break
-            # Get fps.
-            fps = cap.get(cv2.CAP_PROP_FPS)
             # Get height and width of the frame.
             h, w = image.shape[:2]
             # Convert the BGR image to RGB.
@@ -276,25 +123,204 @@ def learn_beginner_assignment_1_upload():
             # Right foot index
             r_foot_x = int(lm.landmark[lmPose.RIGHT_FOOT_INDEX].x * w)
             r_foot_y = int(lm.landmark[lmPose.RIGHT_FOOT_INDEX].y * h)
-            frames_baseline.append([l_shldr_x, l_shldr_y, l_elbow_x, l_elbow_y, l_wrist_x, l_wrist_y, l_index_x, l_index_y, l_hip_x, l_hip_y, l_knee_x, l_knee_y, l_ankle_x, l_ankle_y, l_foot_x, l_foot_y,
-                            r_shldr_x, r_shldr_y, r_elbow_x, r_elbow_y, r_wrist_x, r_wrist_y, r_index_x, r_index_y, r_hip_x, r_hip_y, r_knee_x, r_knee_y, r_ankle_x, r_ankle_y, r_foot_x, r_foot_y])
+            # Calculate chest for normalizing
+            chest_x = (l_shldr_x + r_shldr_x + l_hip_x + r_hip_x)/4
+            chest_y = (l_shldr_y + r_shldr_y + l_hip_y + r_hip_y)/4
+            frames_uploaded.append([l_shldr_x, l_shldr_y, l_elbow_x, l_elbow_y, l_wrist_x, l_wrist_y, l_index_x, l_index_y, l_hip_x, l_hip_y, l_knee_x, l_knee_y, l_ankle_x, l_ankle_y, l_foot_x, l_foot_y,
+                            r_shldr_x, r_shldr_y, r_elbow_x, r_elbow_y, r_wrist_x, r_wrist_y, r_index_x, r_index_y, r_hip_x, r_hip_y, r_knee_x, r_knee_y, r_ankle_x, r_ankle_y, r_foot_x, r_foot_y,
+                            chest_x, chest_y])
         cap.release()
-        angles_baseline = calculate_angles(frames_baseline)
-        angles_uploaded = calculate_angles(frames_uploaded)
-        len_baseline = len(angles_baseline)
-        len_uploaded = len(angles_uploaded)
-        max_score = 0
-        if len_baseline < len_uploaded:
-            offset = len_uploaded - len_baseline
-            for i in range(offset):
-                score = calculate_score(angles_baseline[0:len_baseline], angles_uploaded[i:len_baseline + i], 0)
-                if score > max_score:
-                    max_score = score
-        else:
-            offset = len_baseline - len_uploaded
-            for i in range(offset):
-                score = calculate_score(angles_baseline[i:len_uploaded + i], angles_uploaded[0:len_uploaded], i)
-                if score > max_score:
-                    max_score = score
-        print("Score:", max_score)
-    return render_template("templates/acknowledgement.html", name = uploaded_file.filename)  
+    # Baseline
+    stream = CamGear(source=youtube_url, stream_mode = True, logging=False).start() # YouTube Video URL as input
+    frames_baseline = []
+    while True:
+        image = stream.read()
+        if image is None:
+            break
+        # Get height and width of the frame.
+        h, w = image.shape[:2]
+        # Convert the BGR image to RGB.
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        # Process the image.
+        keypoints = pose.process(image)
+        # Convert the image back to BGR.
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        # Use lm and lmPose as representative of the following methods.
+        lm = keypoints.pose_landmarks
+        lmPose = mp_pose.PoseLandmark
+        if lm is None:
+            continue
+        # Acquire the landmark coordinates.
+        # Once aligned properly, left or right should not be a concern.      
+        # Left shoulder.
+        l_shldr_x = int(lm.landmark[lmPose.LEFT_SHOULDER].x * w)
+        l_shldr_y = int(lm.landmark[lmPose.LEFT_SHOULDER].y * h)
+        # Left elbow.
+        l_elbow_x = int(lm.landmark[lmPose.LEFT_ELBOW].x * w)
+        l_elbow_y = int(lm.landmark[lmPose.LEFT_ELBOW].y * h)
+        # Left wrist.
+        l_wrist_x = int(lm.landmark[lmPose.LEFT_WRIST].x * w)
+        l_wrist_y = int(lm.landmark[lmPose.LEFT_WRIST].y * h)
+        # Left index finger
+        l_index_x = int(lm.landmark[lmPose.LEFT_INDEX].x * w)
+        l_index_y = int(lm.landmark[lmPose.LEFT_INDEX].y * h)
+        # Left hip
+        l_hip_x = int(lm.landmark[lmPose.LEFT_HIP].x * w)
+        l_hip_y = int(lm.landmark[lmPose.LEFT_HIP].y * h)
+        # Left knee
+        l_knee_x = int(lm.landmark[lmPose.LEFT_KNEE].x * w)
+        l_knee_y = int(lm.landmark[lmPose.LEFT_KNEE].y * h)
+        # Left ankle
+        l_ankle_x = int(lm.landmark[lmPose.LEFT_ANKLE].x * w)
+        l_ankle_y = int(lm.landmark[lmPose.LEFT_ANKLE].y * h)
+        # Left foot index
+        l_foot_x = int(lm.landmark[lmPose.LEFT_FOOT_INDEX].x * w)
+        l_foot_y = int(lm.landmark[lmPose.LEFT_FOOT_INDEX].y * h)
+        # Right side body parts
+        # Right shoulder.
+        r_shldr_x = int(lm.landmark[lmPose.RIGHT_SHOULDER].x * w)
+        r_shldr_y = int(lm.landmark[lmPose.RIGHT_SHOULDER].y * h)
+        # Right elbow.
+        r_elbow_x = int(lm.landmark[lmPose.RIGHT_ELBOW].x * w)
+        r_elbow_y = int(lm.landmark[lmPose.RIGHT_ELBOW].y * h)
+        # Right wrist.
+        r_wrist_x = int(lm.landmark[lmPose.RIGHT_WRIST].x * w)
+        r_wrist_y = int(lm.landmark[lmPose.RIGHT_WRIST].y * h)
+        # Right index finger
+        r_index_x = int(lm.landmark[lmPose.RIGHT_INDEX].x * w)
+        r_index_y = int(lm.landmark[lmPose.RIGHT_INDEX].y * h)
+        # Right hip
+        r_hip_x = int(lm.landmark[lmPose.RIGHT_HIP].x * w)
+        r_hip_y = int(lm.landmark[lmPose.RIGHT_HIP].y * h)
+        # Right knee
+        r_knee_x = int(lm.landmark[lmPose.RIGHT_KNEE].x * w)
+        r_knee_y = int(lm.landmark[lmPose.RIGHT_KNEE].y * h)
+        # Right ankle
+        r_ankle_x = int(lm.landmark[lmPose.RIGHT_ANKLE].x * w)
+        r_ankle_y = int(lm.landmark[lmPose.RIGHT_ANKLE].y * h)
+        # Right foot index
+        r_foot_x = int(lm.landmark[lmPose.RIGHT_FOOT_INDEX].x * w)
+        r_foot_y = int(lm.landmark[lmPose.RIGHT_FOOT_INDEX].y * h)
+        # Calculate chest for normalizing
+        chest_x = (l_shldr_x + r_shldr_x + l_hip_x + r_hip_x)/4
+        chest_y = (l_shldr_y + r_shldr_y + l_hip_y + r_hip_y)/4
+        frames_baseline.append([l_shldr_x, l_shldr_y, l_elbow_x, l_elbow_y, l_wrist_x, l_wrist_y, l_index_x, l_index_y, l_hip_x, l_hip_y, l_knee_x, l_knee_y, l_ankle_x, l_ankle_y, l_foot_x, l_foot_y,
+                        r_shldr_x, r_shldr_y, r_elbow_x, r_elbow_y, r_wrist_x, r_wrist_y, r_index_x, r_index_y, r_hip_x, r_hip_y, r_knee_x, r_knee_y, r_ankle_x, r_ankle_y, r_foot_x, r_foot_y,
+                        chest_x, chest_y])
+    stream.stop()
+    normalized_baseline = calculate_normalized(frames_baseline)
+    normalized_uploaded = calculate_normalized(frames_uploaded)
+    len_baseline = len(normalized_baseline)
+    len_uploaded = len(normalized_uploaded)
+    max_score = 0
+    if len_baseline < len_uploaded:
+        offset = len_uploaded - len_baseline
+        for i in range(offset + 1):
+            score = calculate_normalized_score(normalized_baseline[0:len_baseline], normalized_uploaded[i:len_baseline + i], 0)
+            if score > max_score:
+                max_score = score
+    else:
+        offset = len_baseline - len_uploaded
+        for i in range(offset + 1):
+            score = calculate_normalized_score(normalized_baseline[i:len_uploaded + i], normalized_uploaded[0:len_uploaded], i)
+            if score > max_score:
+                max_score = score
+    return max_score
+
+# Page routes begin here
+# Home page
+@app.route('/')
+def home():
+    return render_template("templates/home.html")  
+# Login route
+@app.route('/login', methods=['POST'])
+def login():
+    if request.method == 'POST':
+        data = json.loads(request.form.to_dict()['event_data'])
+        user = db.user_collection.find_one({'username': data['username']})
+        if user is None:
+            db.user_collection.insert_one({
+                "username": data['username'],
+                "password": data['password'],
+                "kpop_beginner": 0,
+                "kpop_intermediate": 0,
+                "kpop_advanced": 0
+            })
+        session['username'] = data['username']
+    return "/learn"
+# Learn page
+@app.route('/learn')
+def learn_home():
+    username = session['username']
+    user = db.user_collection.find_one({'username': username})
+    if user is None:
+        return redirect("/")
+    return render_template("templates/learn.html", username=username)  
+
+@app.route('/learn/kpop')  
+def learn_kpop():
+    username = session['username']
+    user = db.user_collection.find_one({'username': username})
+    if user is None:
+        return redirect("/")    
+    return render_template("templates/learnkpop.html", 
+                            username=username,
+                            kpop_beginner = user['kpop_beginner'],
+                            kpop_intermediate = user['kpop_intermediate'],
+                            kpop_advanced = user['kpop_advanced'])  
+
+@app.route('/learn/kpop/beginner', methods=['POST'])  
+def learn_kpop_beginner():
+    if request.method == 'POST':  
+        # Read in video file and store temporarily
+        uploaded_file = request.files['file']
+        score = get_score(uploaded_file, "https://youtube.com/shorts/Md9huDZcKl8?feature=share")
+        username = session['username']
+        filter = {"username": username}
+        new_vals = { "$set":
+            {
+                "username": username,
+                "kpop_beginner": score
+            }
+        }
+        db.user_collection.update_one(filter, new_vals)
+        return redirect('/learn/kpop') 
+    
+@app.route('/learn/kpop/intermediate', methods=['POST'])  
+def learn_kpop_intermediate():
+    if request.method == 'POST':  
+        # Read in video file and store temporarily
+        uploaded_file = request.files['file']
+        score = get_score(uploaded_file, "https://youtube.com/shorts/uhFGlDWah10?feature=share")
+        username = session['username']
+        filter = {"username": username}
+        new_vals = { "$set":
+            {
+                "username": username,
+                "kpop_intermediate": score
+            }
+        }
+        db.user_collection.update_one(filter, new_vals)
+        return redirect('/learn/kpop') 
+
+@app.route('/learn/kpop/advanced', methods=['POST'])  
+def learn_kpop_advanced():
+    if request.method == 'POST':  
+        # Read in video file and store temporarily
+        uploaded_file = request.files['file']
+        score = get_score(uploaded_file, "https://youtube.com/shorts/I-pY4jxmA-k?feature=share")
+        username = session['username']
+        filter = {"username": username}
+        new_vals = { "$set":
+            {
+                "username": username,
+                "kpop_advanced": score
+            }
+        }
+        db.user_collection.update_one(filter, new_vals)
+        return redirect('/learn/kpop') 
+    
+# Learn page
+@app.route('/explore')
+def explore_home():
+    return "NO"
