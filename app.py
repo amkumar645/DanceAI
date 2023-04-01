@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request, send_from_directory
+from flask import Flask, render_template, request, redirect, session
 from fileinput import filename
 import cv2
 import tempfile
@@ -8,8 +8,11 @@ import time
 import os
 import numpy as np
 import math
+import db
+import json
 
 app = Flask(__name__, template_folder='.')
+app.secret_key = "cat"
 mp_pose = mp.solutions.pose
 pose = mp_pose.Pose()
 
@@ -57,22 +60,56 @@ def calculate_angles(positions):
         angles.append([left_arm_angle, left_hand_angle, left_leg_angle, left_foot_angle, right_arm_angle, right_hand_angle, right_leg_angle, right_foot_angle])
     return angles
 
-def calculate_score(a1, a2):
+def calculate_score(a1, a2, offset):
     score = 0
+    worst_frame_score = 0
+    worst_frame = -1
     for frame in range(len(a1)):
         a1_angles = np.array(a1[frame])
         a2_angles = np.array(a2[frame])
         angle_diff = a1_angles - a2_angles
-        score += np.linalg.norm(angle_diff)
+        frame_score = np.linalg.norm(angle_diff)
+        if frame_score > worst_frame_score:
+            worst_frame_score = frame_score
+            worst_frame = frame
+        score += frame_score
     score /= len(a1) * -1
+    current_frame = (worst_frame + offset) / 30
+    frame_1 = math.floor(current_frame)
+    frame_2 = math.ceil(current_frame)
+    print("Check your poses between seconds", frame_1, "and", frame_2)
     return np.exp(score)
 
-@app.route('/')  
-def main():  
+# Page routes begin here
+# Home page
+@app.route('/')
+def home():
+    return render_template("templates/home.html")  
+# Login route
+@app.route('/login', methods=['POST'])
+def login():
+    if request.method == 'POST':
+        data = json.loads(request.form.to_dict()['event_data'])
+        user = db.user_collection.find_one({'username': data['username']})
+        if user is None:
+            db.user_collection.insert_one({
+                "username": data['username'],
+                "password": data['password'],
+            })
+        session['username'] = data['username']
+    return "/learn"
+# Learn page
+@app.route('/learn')
+def learn_home():
+    username = session['username']
+    return render_template("templates/learn.html", username=username)  
+
+@app.route('/learn/beginner/assignment/1')  
+def learn_beginner_assignment_1():  
     return render_template("templates/index.html")  
   
-@app.route('/success', methods = ['POST'])  
-def success():  
+@app.route('/learn/beginner/assignment/1/uploadedvideo', methods = ['POST'])  
+def learn_beginner_assignment_1_upload():  
     if request.method == 'POST':  
         # Read in video file and store temporarily
         uploaded_file = request.files['file']
@@ -244,7 +281,20 @@ def success():
         cap.release()
         angles_baseline = calculate_angles(frames_baseline)
         angles_uploaded = calculate_angles(frames_uploaded)
-        min_len = min(len(angles_baseline), len(angles_uploaded))
-        score = calculate_score(angles_baseline[0:min_len], angles_uploaded[0:min_len])
-        print("Score:", score)
+        len_baseline = len(angles_baseline)
+        len_uploaded = len(angles_uploaded)
+        max_score = 0
+        if len_baseline < len_uploaded:
+            offset = len_uploaded - len_baseline
+            for i in range(offset):
+                score = calculate_score(angles_baseline[0:len_baseline], angles_uploaded[i:len_baseline + i], 0)
+                if score > max_score:
+                    max_score = score
+        else:
+            offset = len_baseline - len_uploaded
+            for i in range(offset):
+                score = calculate_score(angles_baseline[i:len_uploaded + i], angles_uploaded[0:len_uploaded], i)
+                if score > max_score:
+                    max_score = score
+        print("Score:", max_score)
     return render_template("templates/acknowledgement.html", name = uploaded_file.filename)  

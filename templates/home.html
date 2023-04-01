@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>DanceAI</title>
+    <link href='https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css' rel='stylesheet'>
+    <link href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css' rel='stylesheet'>
+    <!------------------------JS/CSS/JQuery/Bootstrap src ------------>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+        crossorigin="anonymous"></script>
+    <!-- CSS stylesheet  -->
+    <link rel="stylesheet" type="text/css" href="../static/app.css">
+    <link rel="icon" type="image/png" href="{{ url_for('static',filename='favicon.png') }}">
+</head>
+
+<body style="background-color: white">
+    <div class="purple-background">
+        <nav class="navbar navbar-expand-lg navbar-custom">
+            <div class="navbar-brand">DanceAI</div>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+                aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-end" id="navbarSupportedContent">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <button class="btn btn-navbar" onclick="openLogin()">Get Started!</button>
+                        <!-- <a class="nav-link active" aria-current="page" href="/login">Get Started</a> -->
+                    </li>
+                </ul>
+            </div>
+        </nav>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="top-container">
+                    <h1 class="title-text">Learn to dance from the comfort of your own home</h1>
+                    <br>
+                    <p class="title-blurb">
+                        Explore your passion for dance with us without having to leave the house.
+                        On our learn page, you can learn basic dance steps and routines
+                        in a wide variety of styles with instant feedback from an AI pose detection
+                        algorithm. On our explore page, you can post your own choreographies or try
+                        new dances with the rest of the DanceAI community. Lastly, on our connect page,
+                        chat with other passionate dancers. The best part? It's all anonymous, so you
+                        don't have to worry about what other people are thinking.  
+                    </p>
+                </div>
+                <br>
+                <div class="center-container">
+                    <button class="btn btn-home" onclick="openLogin()">Start dancing!</button>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="top-container center-container">
+                    <img class="landing-img" src='/static/assets/home.png'>
+                </div> 
+            </div>
+        </div>
+        <br>
+    </div>
+    {% include 'templates/login.html' %}
+    <script>
+        let request = null;
+        function openLogin() {
+            $('#modalLogin').modal('show')
+        }
+        function login() {
+            // Get data from form
+            var username = $('#username').val();
+            var password = $('#password').val();
+            if (username == '' || password == '') {
+                alert("Please enter a username and password!");
+                return;
+            } 
+            var json_event = {
+                "username": username,
+                "password": password,
+            };
+            if (request != null)
+                request.abort();
+            request = $.post("/login", {
+                dataType: 'json',
+                contentType: 'application/json',
+                event_data: JSON.stringify(json_event)
+            }).done(function (data) {
+                window.location.replace(data);
+            }).fail(function (jqXHR, textStatus, errorThrown) {
+               alert("Login/Sign Up failed");
+            });
+        }
+    </script>
+</body>
+
+</html>

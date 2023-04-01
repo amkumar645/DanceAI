@@ -1,0 +1,115 @@
+@import url('https://fonts.cdnfonts.com/css/ploni');
+@import url('https://fonts.cdnfonts.com/css/hero-4');
+html * {
+    font-family: 'Hero', sans-serif;
+}
+h1 {
+    font-family: 'PloniMLv2AAA-Regular', sans-serif;
+}
+nav {
+    font-family: 'PloniMLv2AAA-Regular', sans-serif;
+}
+.navbar-custom {
+    background-color: black;
+}
+.navbar-brand {
+    color: white !important;
+    font-size: 25px;
+}
+.nav-link {
+    color: white !important;
+    font-size: 20px;
+}
+.btn-navbar {
+    color:white;
+    font-size:20px;
+    border: 1px solid #AA77FF;
+    border-radius: 10px;
+}
+.btn-navbar:hover {
+    color: white;
+    font-size: 20px;
+    background-color: #AA77FF;
+}
+.purple-background {
+    background-color: #AA77FF;
+    min-height: 100vh;
+}
+.top-container {
+    padding-top: 100px;
+    padding-left: 50px;
+    padding-right: 50px;
+}
+.top-container-2 {
+    padding-top: 50px;
+    padding-left: 40px;
+    padding-right: 40px;
+}
+.center-container {
+    text-align: center;
+}
+.right-container {
+    text-align: right;
+}
+.title-text {
+    font-weight: bold;
+    color: black;
+}
+.title-blurb {
+    font-size: 20px;
+    color: black;
+}
+.landing-img {
+    width:60%;
+}
+.btn-home {
+    color: black;
+    font-size: 20px;
+    background-color: #AA77FF;
+    border: 2px solid black;
+    border-radius: 10px;
+    transition: all 0.3s
+}
+.btn-home:hover {
+    background-color: black;
+    border: 2px solid black;
+    color:white;
+    transition: all 0.3s
+}
+.btn-login {
+    color: white;
+    font-size: 20px;
+    background-color: black;
+    border: 2px solid black;
+    border-radius: 10px;
+    transition: all 0.3s
+}
+
+.btn-login:hover {
+    background-color: #62CDFF;
+    border: 2px solid #62CDFF;
+    color: white;
+    transition: all 0.3s
+}
+.page-title {
+    font-weight: bold;
+    color: black;
+    font-size: 50px;
+}
+.dance-card {
+    background-color: white;
+    border-radius: 20px;
+    padding-top: 10px;
+    transition: all 0.3s;
+    height: 500px;
+    margin-bottom: 30px;
+}
+.dance-card:hover {
+    cursor: pointer;
+    transform: scale(1.03);
+    transition: all 0.3s;
+}
+.card-img {
+    height: 300px;
+    width: 300px;
+}
