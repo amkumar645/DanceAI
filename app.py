@@ -248,7 +248,13 @@ def login():
                 "password": data['password'],
                 "kpop_beginner": 0,
                 "kpop_intermediate": 0,
-                "kpop_advanced": 0
+                "kpop_advanced": 0,
+                "hiphop_beginner": 0,
+                "hiphop_intermediate": 0,
+                "hiphop_advanced": 0,
+                "ballet_beginner": 0,
+                "ballet_intermediate": 0,
+                "ballet_advanced": 0
             })
         session['username'] = data['username']
     return "/learn"
@@ -331,6 +337,150 @@ def learn_kpop_advanced():
         }
         db.user_collection.update_one(filter, new_vals)
         return redirect('/learn/kpop') 
+
+@app.route('/learn/hiphop')  
+def learn_hiphop():
+    username = session['username']
+    user = db.user_collection.find_one({'username': username})
+    if user is None:
+        return redirect("/")    
+    return render_template("templates/learnhiphop.html", 
+                            username=username,
+                            kpop_beginner = user['hiphop_beginner'],
+                            kpop_intermediate = user['hiphop_intermediate'],
+                            kpop_advanced = user['hiphop_advanced'])  
+
+@app.route('/learn/hiphop/beginner', methods=['POST'])  
+def learn_hiphop_beginner():
+    if request.method == 'POST':  
+        # Read in video file and store temporarily
+        uploaded_file = request.files['file']
+        score = get_score(uploaded_file, "https://youtube.com/shorts/ymi5vweJLwI?feature=share", 20)
+        username = session['username']
+        user = db.user_collection.find_one({'username': username})
+        if user is None:
+            return redirect("/") 
+        filter = {"username": username}
+        new_vals = { "$set":
+            {
+                "username": username,
+                "hiphop_beginner": score
+            }
+        }
+        db.user_collection.update_one(filter, new_vals)
+        return redirect('/learn/hiphop') 
+    
+@app.route('/learn/hiphop/intermediate', methods=['POST'])  
+def learn_hiphop_intermediate():
+    if request.method == 'POST':  
+        # Read in video file and store temporarily
+        uploaded_file = request.files['file']
+        score = get_score(uploaded_file, "https://youtube.com/shorts/GKHE9b5NXXU?feature=share", 20)
+        username = session['username']
+        user = db.user_collection.find_one({'username': username})
+        if user is None:
+            return redirect("/") 
+        filter = {"username": username}
+        new_vals = { "$set":
+            {
+                "username": username,
+                "hiphop_intermediate": score
+            }
+        }
+        db.user_collection.update_one(filter, new_vals)
+        return redirect('/learn/hiphop') 
+
+@app.route('/learn/hiphop/advanced', methods=['POST'])  
+def learn_hiphop_advanced():
+    if request.method == 'POST':  
+        # Read in video file and store temporarily
+        uploaded_file = request.files['file']
+        score = get_score(uploaded_file, "https://youtu.be/YeNWNUfM-rk", 20)
+        username = session['username']
+        user = db.user_collection.find_one({'username': username})
+        if user is None:
+            return redirect("/") 
+        filter = {"username": username}
+        new_vals = { "$set":
+            {
+                "username": username,
+                "hiphop_advanced": score
+            }
+        }
+        db.user_collection.update_one(filter, new_vals)
+        return redirect('/learn/hiphop') 
+    
+@app.route('/learn/ballet')  
+def learn_ballet():
+    username = session['username']
+    user = db.user_collection.find_one({'username': username})
+    if user is None:
+        return redirect("/")    
+    return render_template("templates/learnballet.html", 
+                            username=username,
+                            kpop_beginner = user['ballet_beginner'],
+                            kpop_intermediate = user['ballet_intermediate'],
+                            kpop_advanced = user['ballet_advanced'])  
+
+@app.route('/learn/ballet/beginner', methods=['POST'])  
+def learn_ballet_beginner():
+    if request.method == 'POST':  
+        # Read in video file and store temporarily
+        uploaded_file = request.files['file']
+        score = get_score(uploaded_file, "https://youtu.be/xojoCkX6oh4", 20)
+        username = session['username']
+        user = db.user_collection.find_one({'username': username})
+        if user is None:
+            return redirect("/") 
+        filter = {"username": username}
+        new_vals = { "$set":
+            {
+                "username": username,
+                "ballet_beginner": score
+            }
+        }
+        db.user_collection.update_one(filter, new_vals)
+        return redirect('/learn/ballet') 
+    
+@app.route('/learn/ballet/intermediate', methods=['POST'])  
+def learn_ballet_intermediate():
+    if request.method == 'POST':  
+        # Read in video file and store temporarily
+        uploaded_file = request.files['file']
+        score = get_score(uploaded_file, "https://youtube.com/shorts/C-c9LWyNkIY?feature=share", 20)
+        username = session['username']
+        user = db.user_collection.find_one({'username': username})
+        if user is None:
+            return redirect("/") 
+        filter = {"username": username}
+        new_vals = { "$set":
+            {
+                "username": username,
+                "ballet_intermediate": score
+            }
+        }
+        db.user_collection.update_one(filter, new_vals)
+        return redirect('/learn/ballet') 
+
+@app.route('/learn/ballet/advanced', methods=['POST'])  
+def learn_ballet_advanced():
+    if request.method == 'POST':  
+        # Read in video file and store temporarily
+        uploaded_file = request.files['file']
+        score = get_score(uploaded_file, "https://youtube.com/shorts/ImOrJZkzazs?feature=share", 20)
+        username = session['username']
+        user = db.user_collection.find_one({'username': username})
+        if user is None:
+            return redirect("/") 
+        filter = {"username": username}
+        new_vals = { "$set":
+            {
+                "username": username,
+                "ballet_advanced": score
+            }
+        }
+        db.user_collection.update_one(filter, new_vals)
+        return redirect('/learn/ballet') 
 
 # Explore page
 @app.route('/explore')
