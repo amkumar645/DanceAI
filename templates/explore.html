@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>DanceAI</title>
+    <link href='https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css' rel='stylesheet'>
+    <link href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css' rel='stylesheet'>
+    <!------------------------JS/CSS/JQuery/Bootstrap src ------------>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+        crossorigin="anonymous"></script>
+    <!-- CSS stylesheet  -->
+    <link rel="stylesheet" type="text/css" href="../static/app.css">
+    <link rel="icon" type="image/png" href="{{ url_for('static',filename='favicon.png') }}">
+</head>
+
+<body style="background-color: white">
+    <div class="purple-background">
+        <nav class="navbar navbar-expand-lg navbar-custom">
+            <div class="navbar-brand">DanceAI</div>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+                aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-end" id="navbarSupportedContent">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="/learn">Learn</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="/explore">Explore</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="/connect">Connect</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+        <div class="top-container-2 center-container">
+            <h1 class="page-title">Explore</h1>
+            <p class="title-blurb">
+                Search through other choreographies submitted by other users or challenge others to your own!
+            </p>
+            <button class="btn btn-login" onclick="openAddForm()">Add your own choreo!</button>
+            <br>
+            <br>
+            <div class="row">
+                {% for explore in explores %}
+                <div class="col-md-4">
+                    <div class="explore-card">
+                        <br>
+                        <iframe width="70%" src="{{explore.embedded}}" title="YouTube video player"
+                            frameborder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowfullscreen></iframe>
+                        <div>Title: {{explore.title}}e</div>
+                        <div>Creator: {{explore.creator}}</div>
+                        <div>Style: {{explore.type}}</div>
+                        <button class="btn btn-explore" onclick="openLeaderboard('{{explore.embedded}}')">See Leaderboard</button>
+                        <br>
+                    </div>
+                </div>
+                <!-- {{loop.index}}  -->
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% include 'templates/add_explore.html' %}
+    {% include 'templates/leaderboard.html' %}
+    <script>
+        let request = null;
+        function openAddForm() {
+            $('#modalAddExplore').modal('show')
+        }
+        function openLeaderboard(embedded) {
+            if (request != null)
+                request.abort();
+            var url = "/explore/leaderboard?query="+embedded
+            request = $.get(url, {
+                
+            }).done(function (data) {
+                $('#leaderboard-body').html(data);
+                $('#leaderboard').modal('show')
+            }).fail(function (jqXHR, textStatus, errorThrown) {
+                alert("We had some trouble obtaining the leaderboard! Try again!");
+            });
+        }
+        function submitChoreo() {
+            // Get data from form
+            var title = $('#title').val();
+            var embedded = $('#embedded').val();
+            var type = $('#type').val();
+            if (title == '' || embedded == '' || type == '') {
+                alert("Please fill out all fields!");
+                return;
+            }
+            var json_event = {
+                "title": title,
+                "embedded": embedded,
+                "type": type,
+            };
+            if (request != null)
+                request.abort();
+            request = $.post("/explore/add", {
+                dataType: 'json',
+                contentType: 'application/json',
+                event_data: JSON.stringify(json_event)
+            }).done(function (data) {
+                window.location.reload();
+            }).fail(function (jqXHR, textStatus, errorThrown) {
+                alert("We had some trouble adding your choreo! Try again!");
+            });
+        }
+    </script>
+</body>
+
+</html>

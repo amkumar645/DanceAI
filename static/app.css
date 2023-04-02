@@ -84,7 +84,6 @@ nav {
     border-radius: 10px;
     transition: all 0.3s
 }
-
 .btn-login:hover {
     background-color: #62CDFF;
     border: 2px solid #62CDFF;
@@ -118,4 +117,30 @@ nav {
 }
 .full-width {
     width:100%;
+}
+.explore-card {
+    background-color: white;
+    margin: 10px;
+    border-radius: 20px;
+    padding-top: 20px;
+    padding-bottom:20px;
+    transition: all 0.3s;
+    margin-bottom: 30px;
+}
+.btn-explore {
+    color: black;
+    font-size: 15px;
+    background-color: #62CDFF;
+    border: 2px solid #62CDFF;
+    border-radius: 10px;
+    transition: all 0.3s
+}
+.btn-explore:hover {
+    background-color: #62CDFF;
+    border: 2px solid #62CDFF;
+    color: white;
+    transition: all 0.3s
+}
+.leaderboard {
+    font-size:20px;
 }

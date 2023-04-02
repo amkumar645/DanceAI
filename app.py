@@ -8,6 +8,7 @@ import math
 import db
 import json
 from vidgear.gears import CamGear
+import jsonify
 
 app = Flask(__name__, template_folder='.')
 app.secret_key = "cat"
@@ -319,8 +320,38 @@ def learn_kpop_advanced():
         }
         db.user_collection.update_one(filter, new_vals)
         return redirect('/learn/kpop') 
-    
-# Learn page
+
+# Explore page
 @app.route('/explore')
 def explore_home():
-    return "NO"
+    explores = db.explore_collection.find()
+    return render_template("templates/explore.html", explores=explores)  
+
+@app.route('/explore/add', methods=['POST'])
+def explore_add():
+    if request.method == 'POST':
+        data = json.loads(request.form.to_dict()['event_data'])
+        username = session['username']
+        url = data['embedded']
+        id = url.split("v=")[1]
+        embedded = "https://www.youtube.com/embed/" + id
+        db.explore_collection.insert_one({
+            "title": data['title'],
+            "embedded": embedded,
+            "type": data['type'],
+            "creator": username,
+            "leaderboard_users": ["jiaweim", "amkumar"],
+            "leaderboard_scores": [0.85, 0.47]
+        })
+    return "SUCCESS"
+
+@app.route('/explore/leaderboard', methods=['GET'])
+def explore_leaderboard():
+    embedded = request.args.get('query')
+    explore = db.explore_collection.find_one({'embedded': embedded})
+    users = explore['leaderboard_users']
+    scores = explore['leaderboard_scores']
+    leaderboard_string = ''
+    for i in range(len(users)):
+        leaderboard_string += users[i] + ": " + str(scores[i]) + "<br>"
+    return leaderboard_string
