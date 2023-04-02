@@ -43,12 +43,12 @@ def calculate_normalized_score(n1, n2, offset):
             total_count += 1
     score /= total_count * -1
     current_frame = (worst_frame + offset) / 30
-    frame_1 = math.floor(current_frame)
-    frame_2 = math.ceil(current_frame)
+    # frame_1 = math.floor(current_frame)
+    # frame_2 = math.ceil(current_frame)
     # print("Check your poses between seconds", frame_1, "and", frame_2)
     return np.exp(score)
 
-def get_score(uploaded_file, youtube_url):
+def get_score(uploaded_file, youtube_url, frame_dist):
     with tempfile.TemporaryDirectory() as td:
         temp_filename = Path(td) / 'uploaded_video'
         uploaded_file.save(temp_filename)
@@ -57,6 +57,8 @@ def get_score(uploaded_file, youtube_url):
         # Capture frames.
         while cap.isOpened():
             success, image = cap.read()
+            for i in range(frame_dist):
+                success, image = cap.read()
             if not success:
                 break
             # Get height and width of the frame.
@@ -135,6 +137,8 @@ def get_score(uploaded_file, youtube_url):
     frames_baseline = []
     while True:
         image = stream.read()
+        for i in range(frame_dist):
+            image = stream.read()
         if image is None:
             break
         # Get height and width of the frame.
@@ -274,7 +278,7 @@ def learn_kpop_beginner():
     if request.method == 'POST':  
         # Read in video file and store temporarily
         uploaded_file = request.files['file']
-        score = get_score(uploaded_file, "https://youtube.com/shorts/Md9huDZcKl8?feature=share")
+        score = get_score(uploaded_file, "https://youtube.com/shorts/Md9huDZcKl8?feature=share", 5)
         username = session['username']
         filter = {"username": username}
         new_vals = { "$set":
@@ -291,7 +295,7 @@ def learn_kpop_intermediate():
     if request.method == 'POST':  
         # Read in video file and store temporarily
         uploaded_file = request.files['file']
-        score = get_score(uploaded_file, "https://youtube.com/shorts/uhFGlDWah10?feature=share")
+        score = get_score(uploaded_file, "https://youtube.com/shorts/uhFGlDWah10?feature=share", 5)
         username = session['username']
         filter = {"username": username}
         new_vals = { "$set":
@@ -308,7 +312,7 @@ def learn_kpop_advanced():
     if request.method == 'POST':  
         # Read in video file and store temporarily
         uploaded_file = request.files['file']
-        score = get_score(uploaded_file, "https://youtube.com/shorts/I-pY4jxmA-k?feature=share")
+        score = get_score(uploaded_file, "https://youtube.com/shorts/I-pY4jxmA-k?feature=share", 5)
         username = session['username']
         filter = {"username": username}
         new_vals = { "$set":
