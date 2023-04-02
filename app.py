@@ -8,7 +8,6 @@ import math
 import db
 import json
 from vidgear.gears import CamGear
-import jsonify
 
 app = Flask(__name__, template_folder='.')
 app.secret_key = "cat"
@@ -355,3 +354,8 @@ def explore_leaderboard():
     for i in range(len(users)):
         leaderboard_string += users[i] + ": " + str(scores[i]) + "<br>"
     return leaderboard_string
+
+# Explore page
+@app.route('/connect')
+def connect_home():
+    return render_template("templates/connect.html")  
