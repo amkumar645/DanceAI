@@ -256,8 +256,7 @@ def login():
 @app.route('/learn')
 def learn_home():
     username = session['username']
-    user = db.user_collection.find_one({'username': username})
-    if user is None:
+    if username is None:
         return redirect("/")
     return render_template("templates/learn.html", username=username)  
 
@@ -278,8 +277,11 @@ def learn_kpop_beginner():
     if request.method == 'POST':  
         # Read in video file and store temporarily
         uploaded_file = request.files['file']
-        score = get_score(uploaded_file, "https://youtube.com/shorts/Md9huDZcKl8?feature=share", 5)
+        score = get_score(uploaded_file, "https://youtube.com/shorts/Md9huDZcKl8?feature=share", 20)
         username = session['username']
+        user = db.user_collection.find_one({'username': username})
+        if user is None:
+            return redirect("/") 
         filter = {"username": username}
         new_vals = { "$set":
             {
@@ -295,8 +297,11 @@ def learn_kpop_intermediate():
     if request.method == 'POST':  
         # Read in video file and store temporarily
         uploaded_file = request.files['file']
-        score = get_score(uploaded_file, "https://youtube.com/shorts/uhFGlDWah10?feature=share", 5)
+        score = get_score(uploaded_file, "https://youtube.com/shorts/uhFGlDWah10?feature=share", 20)
         username = session['username']
+        user = db.user_collection.find_one({'username': username})
+        if user is None:
+            return redirect("/") 
         filter = {"username": username}
         new_vals = { "$set":
             {
@@ -312,8 +317,11 @@ def learn_kpop_advanced():
     if request.method == 'POST':  
         # Read in video file and store temporarily
         uploaded_file = request.files['file']
-        score = get_score(uploaded_file, "https://youtube.com/shorts/I-pY4jxmA-k?feature=share", 5)
+        score = get_score(uploaded_file, "https://youtube.com/shorts/I-pY4jxmA-k?feature=share", 20)
         username = session['username']
+        user = db.user_collection.find_one({'username': username})
+        if user is None:
+            return redirect("/") 
         filter = {"username": username}
         new_vals = { "$set":
             {
@@ -327,6 +335,10 @@ def learn_kpop_advanced():
 # Explore page
 @app.route('/explore')
 def explore_home():
+    username = session['username']
+    user = db.user_collection.find_one({'username': username})
+    if user is None:
+        return redirect("/")
     explores = db.explore_collection.find()
     return render_template("templates/explore.html", explores=explores)  
 
@@ -335,6 +347,9 @@ def explore_add():
     if request.method == 'POST':
         data = json.loads(request.form.to_dict()['event_data'])
         username = session['username']
+        user = db.user_collection.find_one({'username': username})
+        if user is None:
+            return redirect("/")
         url = data['embedded']
         id = url.split("v=")[1]
         embedded = "https://www.youtube.com/embed/" + id
@@ -350,6 +365,10 @@ def explore_add():
 
 @app.route('/explore/leaderboard', methods=['GET'])
 def explore_leaderboard():
+    username = session['username']
+    user = db.user_collection.find_one({'username': username})
+    if user is None:
+        return redirect("/")
     embedded = request.args.get('query')
     explore = db.explore_collection.find_one({'embedded': embedded})
     users = explore['leaderboard_users']
@@ -362,16 +381,28 @@ def explore_leaderboard():
 # Connect page
 @app.route('/connect')
 def connect_home():
+    username = session['username']
+    user = db.user_collection.find_one({'username': username})
+    if user is None:
+        return redirect("/")
     return render_template("templates/connect.html")  
 
 @app.route('/connect/<type>')
 def connect_type(type):
+    username = session['username']
+    user = db.user_collection.find_one({'username': username})
+    if user is None:
+        return redirect("/")
     messages = db.connect_collection.find({'type': type})
     return render_template("templates/connect_general.html", type=type, messages=messages)  
 
 @app.route('/connect/add/<type>', methods=['POST'])
 def connect_add(type):
     if request.method == 'POST':
+        username = session['username']
+        user = db.user_collection.find_one({'username': username})
+        if user is None:
+            return redirect("/")
         data = json.loads(request.form.to_dict()['event_data'])
         username = session['username']
         db.connect_collection.insert_one({
