@@ -51,6 +51,9 @@ nav {
 .right-container {
     text-align: right;
 }
+.left-container {
+    text-align: left;
+}
 .title-text {
     font-weight: bold;
     color: black;
@@ -143,4 +146,27 @@ nav {
 }
 .leaderboard {
     font-size:20px;
+}
+.connect-card {
+    background-color: white;
+    border-radius: 20px;
+    padding-top: 10px;
+    transition: all 0.3s;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+}
+.forum-card {
+    width: 100%;
+    background-color: white;
+    border-radius: 10px;
+    font-size:20px;
+    padding-top: 10px;
+    transition: all 0.3s;
+    margin-top: 10px;
+    padding-bottom: 20px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+.forum-writer {
+    font-size: 15px;
 }

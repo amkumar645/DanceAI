@@ -355,7 +355,24 @@ def explore_leaderboard():
         leaderboard_string += users[i] + ": " + str(scores[i]) + "<br>"
     return leaderboard_string
 
-# Explore page
+# Connect page
 @app.route('/connect')
 def connect_home():
     return render_template("templates/connect.html")  
+
+@app.route('/connect/<type>')
+def connect_type(type):
+    messages = db.connect_collection.find({'type': type})
+    return render_template("templates/connect_general.html", type=type, messages=messages)  
+
+@app.route('/connect/add/<type>', methods=['POST'])
+def connect_add(type):
+    if request.method == 'POST':
+        data = json.loads(request.form.to_dict()['event_data'])
+        username = session['username']
+        db.connect_collection.insert_one({
+            "username": username,
+            "message": data['message'],
+            "type": type,
+        })
+    return "SUCCESS"

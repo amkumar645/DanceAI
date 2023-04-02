@@ -39,67 +39,51 @@
             </div>
         </nav>
         <div class="top-container-2 center-container">
-            <h1 class="page-title">Learn A Dance Style</h1>
-            <p class="title-blurb">
-                With our AI pose detection technology, you'll get instant feedback
-                on how well you performed the lesson. All you have to do is 
-                create a video showing the choreography and upload it and then our 
-                algorithm will do the rest of the work. Happy learning!
-            </p>
-            <br>
+            <h1 class="page-title">{{type}} Dance Forum</h1>
             <div class="row">
-                <div class="col-md-6">
-                    <div class="dance-card">
-                        <h1>K-Pop</h1>
-                        <img class="card-img" src="../static/assets/kpop.jpg">
-                        <br>
-                        <br>
-                        <br>
-                        <a href="/learn/kpop"><button class="btn btn-login">Start/Continue Track</button></a>
-                    </div>
+                <div class="col-10">
+                    <input id="forum-message" class="form-control" placeholder="Type your message here">
+                </div>
+                <div class="col-2">
+                    <button class="btn btn-explore" onclick="sendMessage('{{type}}')">Send Message</button>
                 </div>
                 <br>
-                <div class="col-md-6">
-                    <div class="dance-card">
-                        <h1>Hip Hop</h1>
-                        <img class="card-img" src="../static/assets/hiphop.jpg">
-                        <br>
-                        <br>
-                        <br>
-                        <a href="/learn/hiphop"><button class="btn btn-login">Start/Continue Track</button></a>
-                    </div>
-                </div>
                 <br>
+                {% for message in messages %}
+                <div class="forum-card left-container">
+                    {{message.message}}
+                    <div class="forum-writer">{{message.username}}</div>
+                </div>
+                {% endfor %}
             </div>
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="dance-card">
-                        <h1>Ballet</h1>
-                        <img class="card-img" src="../static/assets/ballet.jpg">
-                        <br>
-                        <br>
-                        <br>
-                        <a href="learn/ballet"><button class="btn btn-login">Start/Continue Track</button></a>
-                    </div>
-                </div>
-                <br>
-                <!-- <div class="col-md-6">
-                    <div class="dance-card">
-                        <h1>K-Pop</h1>
-                        <img class="card-img" src="../static/assets/kpop.jpg">
-                        <br>
-                        <br>
-                        <br>
-                        <a href="learn/kpop"><button class="btn btn-login">Start/Continue Track</button></a>
-                    </div>
-                </div>
-                <br> -->
-            </div>
+            
         </div>
-    </div>
-    <script>
-        let request = null;
-    </script>
+        <script>
+            let request = null;
+            function sendMessage(type) {
+                // Get data from form
+                var message = $('#forum-message').val();
+                if (message == '') {
+                    alert("Type a message to submit it!");
+                    return;
+                }
+                var json_event = {
+                    "message": message,
+                };
+                if (request != null)
+                    request.abort();
+                var url = "/connect/add/" + type;
+                request = $.post(url, {
+                    dataType: 'json',
+                    contentType: 'application/json',
+                    event_data: JSON.stringify(json_event)
+                }).done(function (data) {
+                    window.location.reload();
+                }).fail(function (jqXHR, textStatus, errorThrown) {
+                    alert("We had some trouble adding your message! Try again!");
+                });
+            }
+        </script>
 </body>
 
 </html>
